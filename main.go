@@ -1,7 +1,7 @@
-package backend
+package main
 
 func main() {
-
+	gendb()
 	// GET CONFIG
 	// INIT DB
 	// INIT DATA
