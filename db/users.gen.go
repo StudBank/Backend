@@ -30,7 +30,11 @@ func newUser(db *gorm.DB, opts ...gen.DOOption) user {
 	_user.ALL = field.NewAsterisk(tableName)
 	_user.ID = field.NewUint(tableName, "id")
 	_user.Name = field.NewString(tableName, "name")
-	_user.Password = field.NewField(tableName, "password")
+	_user.Email = field.NewString(tableName, "email")
+	_user.Phone = field.NewString(tableName, "phone")
+	_user.Password = field.NewString(tableName, "password")
+	_user.LastLogin = field.NewTime(tableName, "last_login")
+	_user.ReqCount = field.NewInt(tableName, "req_count")
 	_user.TimeRegistered = field.NewTime(tableName, "time_registered")
 
 	_user.fillFieldMap()
@@ -44,7 +48,11 @@ type user struct {
 	ALL            field.Asterisk
 	ID             field.Uint
 	Name           field.String
-	Password       field.Field
+	Email          field.String
+	Phone          field.String
+	Password       field.String
+	LastLogin      field.Time
+	ReqCount       field.Int
 	TimeRegistered field.Time
 
 	fieldMap map[string]field.Expr
@@ -64,7 +72,11 @@ func (u *user) updateTableName(table string) *user {
 	u.ALL = field.NewAsterisk(table)
 	u.ID = field.NewUint(table, "id")
 	u.Name = field.NewString(table, "name")
-	u.Password = field.NewField(table, "password")
+	u.Email = field.NewString(table, "email")
+	u.Phone = field.NewString(table, "phone")
+	u.Password = field.NewString(table, "password")
+	u.LastLogin = field.NewTime(table, "last_login")
+	u.ReqCount = field.NewInt(table, "req_count")
 	u.TimeRegistered = field.NewTime(table, "time_registered")
 
 	u.fillFieldMap()
@@ -82,10 +94,14 @@ func (u *user) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (u *user) fillFieldMap() {
-	u.fieldMap = make(map[string]field.Expr, 4)
+	u.fieldMap = make(map[string]field.Expr, 8)
 	u.fieldMap["id"] = u.ID
 	u.fieldMap["name"] = u.Name
+	u.fieldMap["email"] = u.Email
+	u.fieldMap["phone"] = u.Phone
 	u.fieldMap["password"] = u.Password
+	u.fieldMap["last_login"] = u.LastLogin
+	u.fieldMap["req_count"] = u.ReqCount
 	u.fieldMap["time_registered"] = u.TimeRegistered
 }
 

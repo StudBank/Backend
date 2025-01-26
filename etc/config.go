@@ -21,5 +21,4 @@ func initConfig() {
 		logger.Err(err).Msg("Error reading the config file")
 		return
 	}
-
 }

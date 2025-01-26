@@ -1,0 +1,36 @@
+api:
+    port: 8080
+    host: back.local
+
+    ssl:
+        on: true
+        cert: envs/dev/cert.pem
+        key: envs/dev/key.pem
+
+    middlewares:
+        cors:
+            allowOrigins:
+                - "*"
+            allowMethods:
+                - GET
+                - PUT
+                - POST
+                - DELETE
+                - PATCH
+            allowHeaders:
+                - "*"
+            allowCredentials: true
+            exposeHeaders:
+                - "*"
+            maxAge: 0
+        csrf:
+            tokenLength: 32
+            tokenLookup: "header:X-CSRF-Token"
+        secure:
+
+
+
+
+metrics:
+    port:
+

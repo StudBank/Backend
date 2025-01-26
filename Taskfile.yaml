@@ -1,0 +1,17 @@
+version: '3'
+
+tasks:
+  build:
+    cmds:
+      - swag fmt
+      - swag init
+      - go build -tags gen -o ./gen.elf
+      - ./gen.elf
+      - rm ./gen.elf
+      - go build -o main.elf
+    silent: true
+
+  run:
+    cmds:
+      - task: build
+      - ./main.elf
