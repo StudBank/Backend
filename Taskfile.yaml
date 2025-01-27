@@ -15,3 +15,10 @@ tasks:
     cmds:
       - task: build
       - ./main.elf
+
+  up:
+    cmds:
+      - docker compose pull
+      - docker compose up -d --remove-orphans
+      - docker compose ps
+    silent: true

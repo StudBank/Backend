@@ -5,11 +5,14 @@ import (
 	"net/http"
 	"os"
 
+	_ "gitea.repetitra.ru/StudBank/Backend/docs"
 	"github.com/labstack/echo-contrib/echoprometheus"
 	"github.com/labstack/echo-contrib/jaegertracing"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+
+	"github.com/swaggo/echo-swagger"
 )
 
 //	@title			Swagger Example API
@@ -59,10 +62,7 @@ func initRoutes(a *API, routes Routes) {
 }
 
 func (a *API) MRun() {
-	c := jaegertracing.New(a.Echo, nil)
-	defer c.Close()
 	a.Use(echoprometheus.NewMiddleware("myapp"))
-
 	go func() {
 		metrics := echo.New()
 		metrics.GET("/metrics", echoprometheus.NewHandler())
@@ -71,5 +71,13 @@ func (a *API) MRun() {
 		}
 	}()
 
-	a.Logger.Fatal(a.Start(":1323"))
+	go func() {
+		swagger := echo.New()
+		swagger.Any("/*", echoSwagger.WrapHandler)
+		if err := swagger.Start(":8082"); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			a.MLog.Err(err).Msg("Swagger server stopped due to the error!")
+		}
+	}()
+
+	a.Logger.Fatal(a.Start(":8080"))
 }

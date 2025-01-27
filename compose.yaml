@@ -9,7 +9,7 @@ services:
     networks:
       - web
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U fiveplus -d back"]
+      test: ["CMD-SHELL", "pg_isready -U studbank -d back"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -19,29 +19,102 @@ services:
     ports:
       - 5432:5432
 
-  otelcol:
-    image: otel/opentelemetry-collector-contrib
-    volumes:
-      - ./otelcol-config.yaml:/etc/otelcol-contrib/config.yaml
-    ports:
-      - 1888:1888 # pprof extension
-      - 8888:8888 # Prometheus metrics exposed by the Collector
-      - 8889:8889 # Prometheus exporter metrics
-      - 13133:13133 # health_check extension
-      - 4317:4317 # OTLP gRPC receiver
-      - 4318:4318 # OTLP http receiver
-      - 55679:55679 # zpages extension
+  loki:
+      image: grafana/loki:master
+      command: -config.file=/etc/loki/local-config.yaml
+      networks:
+          - grafana-loki
+          - promtail-loki
 
-  prom:
-    image: prom/prometheus
-    ports:
-      - 9090:9090
+  promtail:
+      depends_on:
+          - loki
+      image: grafana/promtail:master
+      volumes:
+          - /var/log:/var/log
+      command: -config.file=/etc/promtail/docker-config.yaml
+      networks:
+          - promtail-loki
+
+  cadvisor:
+      image: google/cadvisor
+      volumes:
+          - /:/rootfs:ro
+          - /var/run:/var/run:ro
+          - /sys:/sys:ro
+          - /var/lib/docker/:/var/lib/docker:ro
+          - /dev/disk/:/dev/disk:ro
+      networks:
+          - prometheus-cadvisor
+
+  prometheus:
+      image: prom/prometheus
+      ports:
+          - "9090:9090"
+      volumes:
+          - ./prometheus:/app.cfg
+          - prometheus_data:/prometheus
+      networks:
+          - web
+          - prometheus-cadvisor
+          - grafana-prometheus
+          - ne-prom
+      command: >-
+          --config.file=/app.cfg/prometheus.yml
+          --storage.tsdb.path=/prometheus
+          --web.console.libraries=/usr/share/prometheus/console_libraries
+          --web.console.templates=/usr/share/prometheus/consoles
+
+  grafana:
+      depends_on:
+          - loki
+      image: grafana/grafana
+      ports:
+          - "3000:3000"
+      environment:
+          GF_SECURITY_ADMIN_USER: admin
+          GF_SECURITY_ADMIN_PASSWORD: ButterFly777
+          GF_PATHS_PROVISIONING: '/app.cfg/provisioning'
+      volumes:
+          - ./grafana:/app.cfg
+      networks:
+          - web
+          - grafana-loki
+          - grafana-prometheus
+
+  node-exporter:
+    image: prom/node-exporter
+    container_name: node-exporter
+    restart: unless-stopped
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    networks:
+      - ne-prom
+
 
 networks:
   web:
     external: true
-
+  promtail-loki:
+      internal: true
+  grafana-loki:
+      internal: true
+  grafana-prometheus:
+      internal: true
+  prometheus-cadvisor:
+      internal: true
+  ne-prom:
+      internal: true
 
 volumes:
   db:
+    driver: local
+  prometheus_data:
     driver: local

@@ -6,12 +6,15 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho"
 )
 
 func (a *API) applyMiddlewares() {
 	a._rmTrailingSlash()
 
 	a._recover()
+	a._otelTracing()
+
 	a._bodyLimit()
 	a._logger()
 	a._requestId()
@@ -56,6 +59,10 @@ func (a *API) _recover() {
 
 func (a *API) _bodyLimit() {
 	a.Use(middleware.BodyLimit("2M"))
+}
+
+func (a *API) _otelTracing() {
+	a.Use(otelecho.Middleware("service-name"))
 }
 
 func (a *API) _requestId() {
