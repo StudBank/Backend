@@ -1,0 +1,29 @@
+entryPoints:
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+  websecure:
+    address: ":443"
+    http:
+      tls: {}
+
+api:
+  dashboard: true
+
+log:
+  level: TRACE
+
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"   # Listen to the UNIX Docker socket
+    exposedByDefault: false                   # Only expose container that are explicitly enabled (using label traefik.enabled)
+    network: "web"                            # Default network to use for connections to all containers.
+    watch: true                               # Watch Docker Swarm eventskk
+  file:
+    filename: "/etc/traefik/config.yml"       # Link to the dynamic configuration
+    watch: true                               # Watch for modifications
+
