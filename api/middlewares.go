@@ -6,14 +6,12 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho"
 )
 
 func (a *API) applyMiddlewares() {
 	a._rmTrailingSlash()
 
 	a._recover()
-	a._otelTracing()
 
 	a._bodyLimit()
 	a._logger()
@@ -22,6 +20,7 @@ func (a *API) applyMiddlewares() {
 	a._cors()
 	a._csrf()
 	a._secure()
+
 }
 
 func (a *API) _cors() {
@@ -61,10 +60,6 @@ func (a *API) _bodyLimit() {
 	a.Use(middleware.BodyLimit("2M"))
 }
 
-func (a *API) _otelTracing() {
-	a.Use(otelecho.Middleware("service-name"))
-}
-
 func (a *API) _requestId() {
 	a.Use(middleware.RequestID())
 }
@@ -78,16 +73,6 @@ func (a *API) _logger() {
 		LogStatus:  true,
 		LogLatency: true,
 		LogError:   true,
-		LogValuesFunc: func(c echo.Context, v middleware.RequestLoggerValues) error {
-			a.MLog.Info().
-				Str("URI", v.URIPath).
-				Int("status", v.Status).
-				Int64("latency", int64(v.Latency)).
-				Err(v.Error).
-				Msg("request")
-
-			return nil
-		},
 	}))
 }
 
@@ -96,7 +81,7 @@ func (a *API) _timeout() {
 		Skipper:      middleware.DefaultSkipper,
 		ErrorMessage: "Timeout",
 		OnTimeoutRouteErrorHandler: func(err error, c echo.Context) {
-			a.MLog.Warn().Msg("Timeout on route")
+			a.MLog.WithError(err).Warn("Timeout on route")
 		},
 		Timeout: 30 * time.Second,
 	}))

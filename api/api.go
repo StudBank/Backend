@@ -3,16 +3,14 @@ package api
 import (
 	"errors"
 	"net/http"
-	"os"
 
 	_ "gitea.repetitra.ru/StudBank/Backend/docs"
+	"gitea.repetitra.ru/StudBank/Backend/etc"
 	"github.com/labstack/echo-contrib/echoprometheus"
-	"github.com/labstack/echo-contrib/jaegertracing"
 	"github.com/labstack/echo/v4"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
+	"github.com/sirupsen/logrus"
 
-	"github.com/swaggo/echo-swagger"
+	echoSwagger "github.com/swaggo/echo-swagger"
 )
 
 //	@title			Swagger Example API
@@ -37,12 +35,12 @@ import (
 
 type API struct {
 	*echo.Echo
-	MLog zerolog.Logger
+	MLog *logrus.Logger
 }
 
 func (a *API) Init() (*API, error) {
 	a.Echo = echo.New()
-	a.MLog = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+	a.MLog = etc.GetLogger("api", logrus.TraceLevel)
 
 	a.applyMiddlewares()
 
@@ -53,7 +51,7 @@ func (a *API) Init() (*API, error) {
 }
 
 type Routes struct {
-	Log zerolog.Logger
+	Log *logrus.Logger
 	//DB *db.DB
 }
 
@@ -61,13 +59,13 @@ func initRoutes(a *API, routes Routes) {
 	a.GET("/hello", routes.Hello)
 }
 
-func (a *API) MRun() {
+func (a *API) MRun() error {
 	a.Use(echoprometheus.NewMiddleware("myapp"))
 	go func() {
 		metrics := echo.New()
 		metrics.GET("/metrics", echoprometheus.NewHandler())
 		if err := metrics.Start(":8081"); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			a.MLog.Err(err).Msg("Metrics server stopped due to the error!")
+			a.MLog.WithError(err).Fatal("Metrics server stopped due to the error!")
 		}
 	}()
 
@@ -75,9 +73,9 @@ func (a *API) MRun() {
 		swagger := echo.New()
 		swagger.Any("/*", echoSwagger.WrapHandler)
 		if err := swagger.Start(":8082"); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			a.MLog.Err(err).Msg("Swagger server stopped due to the error!")
+			a.MLog.WithError(err).Fatal("Swagger server stopped due to the error!")
 		}
 	}()
 
-	a.Logger.Fatal(a.Start(":8080"))
+	return a.Start(":8080")
 }

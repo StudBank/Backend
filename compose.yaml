@@ -214,6 +214,8 @@ services:
     volumes: 
       - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./infra/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    ports:
+      - 3100:3100 # WARN: Only on DEV
     healthcheck:
       test: ["CMD", "service", "nginx", "status"]
       interval: 10s
@@ -321,7 +323,7 @@ services:
     labels:
       # Main endpoint (8080)
       - traefik.enable=true
-      - "traefik.docker.network=web"
+      - traefik.docker.network=web
       - traefik.http.routers.back.rule=Host(`back.local`)
       - traefik.http.routers.back.entrypoints=websecure
       - traefik.http.routers.back.tls=true
@@ -345,8 +347,7 @@ services:
         condition: service_healthy
       grafana: 
         condition: service_healthy
-      tempo:
-        condition: service_healthy
+
 
 volumes:
   postgres_data:

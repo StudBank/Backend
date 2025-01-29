@@ -1,1 +1,2 @@
 envs/dev/sec/** filter=git-crypt diff=git-crypt
+envs/test/sec/** filter=git-crypt diff=git-crypt
